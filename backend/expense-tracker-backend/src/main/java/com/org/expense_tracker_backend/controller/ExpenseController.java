@@ -2,13 +2,14 @@ package com.org.expense_tracker_backend.controller;
 
 import com.org.expense_tracker_backend.model.Expense;
 import com.org.expense_tracker_backend.service.ExpenseService;
+import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.math.BigDecimal;
 import java.util.List;
-import java.util.Optional;
 
 @RestController
-@RequestMapping("/expenses")
+@RequestMapping("/api/expenses")
 public class ExpenseController {
     private final ExpenseService expenseService;
 
@@ -17,16 +18,22 @@ public class ExpenseController {
     }
 
     @GetMapping
-    public List<Expense> getAllExpenses(){
-        return expenseService.getALlExpenses();
+    public ResponseEntity<List<Expense>> getAllExpenses() {
+        List<Expense> expenses = expenseService.getAllExpenses();
+        return ResponseEntity.ok(expenses);
     }
+
     @GetMapping("/{id}")
-    public Optional<Expense> getExpenseById(@PathVariable Long id){
+    public Expense getExpenseById(@PathVariable Long id) {
         return expenseService.getExpenseById(id);
     }
 
     @PostMapping
-    public Expense addExpense(@RequestBody Expense expense){
-        return expenseService.addExpense(expense);
+    public ResponseEntity<Expense> addExpense(@RequestBody Expense expense) {
+        if (expense.getAmount() == null || expense.getAmount().compareTo(BigDecimal.ZERO) <= 0) {
+            throw new IllegalArgumentException("Expense amount must be greater than zero");
+        }
+        Expense savedExpense = expenseService.addExpense(expense);
+        return ResponseEntity.ok(savedExpense);
     }
 }

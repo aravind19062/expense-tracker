@@ -2,6 +2,7 @@ package com.org.expense_tracker_backend.controller;
 
 import com.org.expense_tracker_backend.model.Expense;
 import com.org.expense_tracker_backend.service.ExpenseService;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -11,6 +12,7 @@ import java.util.List;
 @RestController
 @RequestMapping("/api/expenses")
 public class ExpenseController {
+    @Autowired
     private final ExpenseService expenseService;
 
     public ExpenseController(ExpenseService expenseService) {

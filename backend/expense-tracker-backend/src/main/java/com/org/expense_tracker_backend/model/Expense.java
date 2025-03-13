@@ -21,8 +21,10 @@ public class Expense {
     @Column(nullable = false, precision = 10, scale = 2)
     private BigDecimal amount;
 
-    @Column(nullable = false, length = 50)
-    private String category;
+
+    @ManyToOne
+    @JoinColumn(name = "category_id")
+    private Category category;
 
     public Long getId() {
         return id;
@@ -36,7 +38,7 @@ public class Expense {
         return amount;
     }
 
-    public String getCategory() {
+    public Category getCategory() {
         return category;
     }
 
@@ -52,7 +54,7 @@ public class Expense {
         this.amount = amount;
     }
 
-    public void setCategory(String category) {
+    public void setCategory(Category category) {
         this.category = category;
     }
 }

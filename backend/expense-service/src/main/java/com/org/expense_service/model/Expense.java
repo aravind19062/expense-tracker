@@ -5,6 +5,7 @@ import jakarta.persistence.*;
 import lombok.*;
 
 import java.math.BigDecimal;
+import java.time.LocalDate;
 
 @Entity
 @Data
@@ -26,6 +27,7 @@ public class Expense {
     @JoinColumn(name = "category_id")
     @JsonBackReference
     private Category category;
+
 
     public Long getId() {
         return id;

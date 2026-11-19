@@ -1,8 +1,8 @@
 # Expense Tracker – Quarkus Microservices
 
 The Expense Tracker backend, migrated from **Spring Boot 3.1 / Spring Cloud (Eureka + Spring Cloud Gateway)** to
-**Quarkus 3.40 (LTS)**. The original Spring Boot code under [`../backend`](../backend) is untouched and kept as the
-reference implementation.
+**Quarkus 3.40 (LTS)**. The original Spring Boot code (`backend/`) has been removed from the working tree; it remains
+available in the git history (e.g. `git show 96ec8d1:backend`).
 
 | Component | What it is | Port |
 |---|---|---|
@@ -523,8 +523,7 @@ still available in `upn` and `email`.
 
 ### Problems in the original code found during the migration
 
-These existed in the Spring Boot code and are fixed in the Quarkus version. The original is intentionally left
-as is.
+These existed in the Spring Boot code and are fixed in the Quarkus version.
 
 1. `@JsonBackReference` on `Expense.category` made categories impossible to assign or read through the expense
    API.
@@ -533,8 +532,8 @@ as is.
 3. The expense service's catch-all handler turned every `RuntimeException`, including programming errors, into
    404.
 4. The gateway declared `jwt.secret` but performed no JWT validation, and expense-service used `permitAll()`.
-5. The HS256 signing secret is committed in plain text in `backend/auth-service` and `backend/api-gateway`
-   `application.properties`, and therefore in git history. It should be treated as compromised and must not be
+5. The HS256 signing secret was committed in plain text in the Spring `auth-service` and `api-gateway`
+   `application.properties`, and therefore remains in git history. It should be treated as compromised and must not be
    reused.
 6. `CascadeType.ALL` from `Category` to `Expense` meant deleting a category silently deleted its expenses.
 

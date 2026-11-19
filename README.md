@@ -1,141 +1,72 @@
-📊 Expense Tracker – Microservices-Based Full Stack Application
-🚀 Overview
+# Expense Tracker
 
-The Expense Tracker is a full-stack, microservices-based application designed to help users track their income and expenses, analyze spending patterns, and manage budgets efficiently.
-The application follows real-world backend architecture principles and is built with scalability and maintainability in mind.
+A microservices backend for tracking personal expenses, built with **Quarkus**. Users register and log in, then
+create, read, update and delete their own expenses and categories through a single API Gateway secured with JWT.
 
-🧩 Key Features
+The backend was originally written with Spring Boot and Spring Cloud (Eureka, Spring Cloud Gateway) and has been
+migrated to Quarkus. The Spring Boot version is still available in the git history.
 
-🔐 User authentication & authorization
+## Architecture
 
-💸 Add, update, delete income and expenses
+```mermaid
+flowchart LR
+    C[Client] --> GW["api-gateway :8082<br/>JWT validation · routing · retries"]
+    GW -->|"stork://auth-service"| AU["auth-service :8081<br/>register · login · RS256 JWT"]
+    GW -->|"stork://expense-service"| EX["expense-service :8080<br/>expense & category CRUD"]
+    AU --> DB[(PostgreSQL)]
+    EX --> DB
+```
 
-🗂 Categorize expenses (Food, Rent, Travel, etc.)
+| Service | Responsibility |
+|---|---|
+| **api-gateway** | Single entry point. Validates JWTs and routes requests through SmallRye Stork service discovery, with timeouts and retries. |
+| **auth-service** | User registration, BCrypt password hashing, RS256-signed JWTs, public key published as a JWKS. |
+| **expense-service** | Expense and category CRUD on PostgreSQL, with request validation. Verifies JWTs on its own. |
 
-📆 Monthly and yearly expense summaries
+## Tech stack
 
-📊 Visual insights using charts and analytics
+Java 17 · Quarkus 3.40 (JAX-RS, CDI, Hibernate ORM with Panache, Hibernate Validator, SmallRye JWT, MicroProfile
+REST Client, SmallRye Stork, MicroProfile Fault Tolerance, SmallRye OpenAPI) · PostgreSQL · Docker Compose ·
+JUnit 5, RestAssured, WireMock · Postman
 
-🧠 AI-based budgeting (planned / in progress)
+## Quick start
 
-🌐 RESTful APIs following best practices
+Requires Docker and `openssl`.
 
-🏗️ Architecture
+```bash
+cd expense-tracker-quarkus
+./scripts/generate-keys.sh     # RSA key pair for signing JWTs (git-ignored)
+cp .env.example .env           # then set database passwords
+docker compose up --build
+```
 
-This project follows a microservices architecture, where each service is independently deployable and scalable.
+The API is served at `http://localhost:8082`. Swagger UI is at `http://localhost:8082/q/swagger-ui`.
 
-Example services:
+```bash
+./scripts/smoke-test.sh        # end-to-end checks through the gateway
+```
 
-Auth Service – User authentication and authorization
+## Project structure
 
-Expense Service – Expense and income management
-
-Analytics Service – Reports and summaries
-
-Frontend Service – User interface
-
-Frontend  →  API Gateway  →  Microservices  →  Database
-
-🛠️ Tech Stack
-Backend
-
-Java
-
-Spring Boot
-
-REST APIs
-
-Microservices architecture
-
-Maven / Gradle
-
-Database: MySQL / PostgreSQL (update as applicable)
-
-Frontend
-
-HTML / CSS / JavaScript
-
-React (if applicable)
-
-Tools & Others
-
-Git & GitHub
-
-Postman (API testing)
-
-Swagger / OpenAPI (API documentation – planned)
-
-Docker (planned)
-
-📂 Project Structure
+```
 expense-tracker/
-│
-├── backend/
+├── expense-tracker-quarkus/
+│   ├── api-gateway/
 │   ├── auth-service/
 │   ├── expense-service/
-│   ├── analytics-service/
-│
-├── frontend/
-│   ├── src/
-│   ├── public/
-│
-└── README.md
+│   ├── docker-compose.yml
+│   ├── postman/              # importable Postman collection
+│   ├── scripts/              # key generation, smoke test
+│   └── README.md             # full documentation
+└── frontend/                 # reserved for the frontend (not yet implemented)
+```
 
-⚙️ Setup & Run Instructions
-Backend
-git clone https://github.com/aravind19062/expense-tracker.git
-cd expense-tracker/backend
-mvn spring-boot:run
+## Documentation
 
-Frontend
-cd frontend
-npm install
-npm start
+The full documentation is in [`expense-tracker-quarkus/README.md`](expense-tracker-quarkus/README.md). It covers
+the API endpoints, the JWT flow, service discovery, configuration, tests and notes on the Spring Boot → Quarkus
+migration.
 
-📊 Sample Use Cases
+## Author
 
-Track daily expenses
-
-Set monthly budgets
-
-Identify spending patterns
-
-Get alerts when budget limits are exceeded
-
-View expense analytics using charts
-
-🧠 AI Budgeting (Planned / In Progress)
-
-Analyze past expense patterns
-
-Suggest monthly budget limits
-
-Predict future expenses using historical data
-
-🔮 Future Enhancements
-
-✅ AI-driven budget recommendations
-
-📤 Export expenses as CSV / PDF
-
-🔔 Notifications for overspending
-
-☁️ Cloud deployment (AWS / Render / Heroku)
-
-🧪 Unit & integration testing
-
-🔐 Role-based access control
-
-📸 Screenshots
-
-
-
-👤 Author
-
-Aravind Yarramsetty
-
-GitHub: https://github.com/aravind19062
-
-📌 Resume Description (You can copy this)
-
-Developed a microservices-based expense tracker application using Java and Spring Boot, featuring RESTful APIs, expense analytics, and a scalable backend architecture. Implemented expense categorization, summaries, and designed AI-based budgeting enhancements.
+Aravind Yarramsetty · GitHub: https://github.com/aravind19062

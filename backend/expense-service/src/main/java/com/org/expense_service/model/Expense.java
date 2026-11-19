@@ -7,6 +7,8 @@ import lombok.*;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 
+@Setter
+@Getter
 @Entity
 @Data
 @NoArgsConstructor
@@ -29,35 +31,4 @@ public class Expense {
     private Category category;
 
 
-    public Long getId() {
-        return id;
-    }
-
-    public String getTitle() {
-        return title;
-    }
-
-    public BigDecimal getAmount() {
-        return amount;
-    }
-
-    public Category getCategory() {
-        return category;
-    }
-
-    public void setId(Long id) {
-        this.id = id;
-    }
-
-    public void setTitle(String title) {
-        this.title = title;
-    }
-
-    public void setAmount(BigDecimal amount) {
-        this.amount = amount;
-    }
-
-    public void setCategory(Category category) {
-        this.category = category;
-    }
 }

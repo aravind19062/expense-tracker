@@ -14,27 +14,27 @@ public final class Tokens {
     }
 
     public static String validFor(String userId) {
-        return base(userId).groups(Set.of("USER")).sign(TestKeys.TRUSTED.getPrivate());
+        return base(userId).groups(Set.of("user")).sign(TestKeys.TRUSTED.getPrivate());
     }
 
     public static String expiredFor(String userId) {
-        return Jwt.issuer(ISSUER).subject(userId).groups(Set.of("USER"))
+        return Jwt.issuer(ISSUER).subject(userId).groups(Set.of("user"))
                 .issuedAt(Instant.now().minusSeconds(7200))
                 .expiresAt(Instant.now().minusSeconds(3600))
                 .sign(TestKeys.TRUSTED.getPrivate());
     }
 
     public static String signedWithUntrustedKey(String userId) {
-        return base(userId).groups(Set.of("USER")).sign(TestKeys.UNTRUSTED.getPrivate());
+        return base(userId).groups(Set.of("user")).sign(TestKeys.UNTRUSTED.getPrivate());
     }
 
     public static String wrongIssuer(String userId) {
-        return Jwt.issuer("https://evil.example.com").subject(userId).groups(Set.of("USER"))
+        return Jwt.issuer("https://evil.example.com").subject(userId).groups(Set.of("user"))
                 .expiresIn(3600).sign(TestKeys.TRUSTED.getPrivate());
     }
 
     public static String withoutUserRole(String userId) {
-        return base(userId).groups(Set.of("GUEST")).sign(TestKeys.TRUSTED.getPrivate());
+        return base(userId).groups(Set.of("guest")).sign(TestKeys.TRUSTED.getPrivate());
     }
 
     private static io.smallrye.jwt.build.JwtClaimsBuilder base(String userId) {

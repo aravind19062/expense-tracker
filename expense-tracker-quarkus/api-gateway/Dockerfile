@@ -16,6 +16,6 @@ COPY --from=build --chown=1001 /build/target/quarkus-app/*.jar ./
 COPY --from=build --chown=1001 /build/target/quarkus-app/app/ ./app/
 COPY --from=build --chown=1001 /build/target/quarkus-app/quarkus/ ./quarkus/
 USER 1001
-EXPOSE 8082
+EXPOSE 8080
 ENV JAVA_OPTS="-XX:MaxRAMPercentage=75 -Djava.util.logging.manager=org.jboss.logmanager.LogManager"
 ENTRYPOINT ["sh", "-c", "exec java $JAVA_OPTS -jar /deployments/quarkus-run.jar"]

@@ -38,6 +38,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 class AuthResourceTest {
 
     private static final String ISSUER = "https://expense-tracker.local/auth";
+    private static final String USERNAME = "priya";
     private static final String EMAIL = "priya.sharma@example.com";
     private static final String PASSWORD = "S3cure!pass";
 
@@ -49,21 +50,21 @@ class AuthResourceTest {
         testUsers.deleteAll();
     }
 
-    private static void register(String userName, String email, String password) {
+    private static void register(String username, String email, String password) {
         given().contentType(ContentType.JSON)
-                .body(Map.of("userName", userName, "email", email, "password", password))
-                .post("/auth/register").then().statusCode(201);
+                .body(Map.of("username", username, "email", email, "password", password))
+                .post("/api/auth/register").then().statusCode(201);
     }
 
-    private static String login(String email, String password) {
+    private static String login(String username, String password) {
         return given().contentType(ContentType.JSON)
-                .body(Map.of("email", email, "password", password))
-                .post("/auth/login").then().statusCode(200).extract().path("token");
+                .body(Map.of("username", username, "password", password))
+                .post("/api/auth/login").then().statusCode(200).extract().path("token");
     }
 
     /** Verifies a token exactly the way a downstream service would: signature checked against the published JWKS. */
     private static JwtClaims verify(String token, NumericDate evaluationTime) throws Exception {
-        String jwks = given().get("/auth/jwks").then().statusCode(200).extract().asString();
+        String jwks = given().get("/api/auth/jwks").then().statusCode(200).extract().asString();
         JwtConsumerBuilder builder = new JwtConsumerBuilder()
                 .setVerificationKeyResolver(new JwksVerificationKeyResolver(new JsonWebKeySet(jwks).getJsonWebKeys()))
                 .setExpectedIssuer(ISSUER)
@@ -82,62 +83,78 @@ class AuthResourceTest {
     class Registration {
 
         @Test
-        void registerReturns201WithOriginalMessageAndStoresUserWithUserRole() {
+        void registerReturns201WithUserAndStoresUserWithUserRole() {
             given().contentType(ContentType.JSON)
-                    .body(Map.of("userName", "Priya Sharma", "email", "Priya.Sharma@Example.com", "password", PASSWORD))
-                    .post("/auth/register")
+                    .body(Map.of("username", "Priya", "email", "Priya.Sharma@Example.com", "password", PASSWORD))
+                    .post("/api/auth/register")
                     .then().statusCode(201)
-                    .contentType(ContentType.TEXT)
-                    .body(equalTo("User registered successfully"));
+                    .contentType(ContentType.JSON)
+                    .body("id", org.hamcrest.Matchers.notNullValue())
+                    .body("username", equalTo(USERNAME))
+                    .body("email", equalTo(EMAIL))
+                    .body("$", not(org.hamcrest.Matchers.hasKey("password")));
 
-            User stored = testUsers.find(EMAIL); // email normalized to lower case
-            assertEquals("Priya Sharma", stored.userName);
+            User stored = testUsers.find(USERNAME); // username and email normalized to lower case
+            assertEquals(EMAIL, stored.email);
             assertEquals(Role.USER, stored.role);
         }
 
         @Test
         void passwordIsStoredAsSaltedBcryptHash() {
-            register("Priya", EMAIL, PASSWORD);
-            register("Rahul", "rahul.verma@example.com", PASSWORD);
+            register(USERNAME, EMAIL, PASSWORD);
+            register("rahul", "rahul.verma@example.com", PASSWORD);
 
-            String hash = testUsers.find(EMAIL).password;
+            String hash = testUsers.find(USERNAME).password;
             assertNotEquals(PASSWORD, hash);
             assertTrue(hash.startsWith("$2a$10$"), "expected BCrypt MCF hash with cost 10 but was " + hash);
             assertTrue(BcryptUtil.matches(PASSWORD, hash));
             assertFalse(BcryptUtil.matches("wrong-password", hash));
             // same password, different salt => different hash
-            assertNotEquals(hash, testUsers.find("rahul.verma@example.com").password);
+            assertNotEquals(hash, testUsers.find("rahul").password);
         }
 
         @Test
         void duplicateEmailIsRejectedCaseInsensitively() {
-            register("Priya", EMAIL, PASSWORD);
+            register(USERNAME, EMAIL, PASSWORD);
 
             given().contentType(ContentType.JSON)
-                    .body(Map.of("userName", "Impostor", "email", "PRIYA.SHARMA@example.com", "password", "another1"))
-                    .post("/auth/register")
-                    .then().statusCode(400)
-                    .body("message", equalTo("User already exists"));
+                    .body(Map.of("username", "impostor", "email", "PRIYA.SHARMA@example.com", "password", "another1"))
+                    .post("/api/auth/register")
+                    .then().statusCode(409)
+                    .body("code", equalTo("USER_ALREADY_EXISTS"));
+            assertEquals(1, testUsers.count());
+        }
+
+        @Test
+        void duplicateUsernameIsRejectedCaseInsensitively() {
+            register(USERNAME, EMAIL, PASSWORD);
+
+            given().contentType(ContentType.JSON)
+                    .body(Map.of("username", "PRIYA", "email", "other@example.com", "password", "another1"))
+                    .post("/api/auth/register")
+                    .then().statusCode(409)
+                    .body("code", equalTo("USER_ALREADY_EXISTS"));
             assertEquals(1, testUsers.count());
         }
 
         @Test
         void invalidRegistrationReturns400WithFieldErrors() {
             given().contentType(ContentType.JSON)
-                    .body(Map.of("userName", "", "email", "not-an-email", "password", "123"))
-                    .post("/auth/register")
+                    .body(Map.of("username", "a b", "email", "not-an-email", "password", "123"))
+                    .post("/api/auth/register")
                     .then().statusCode(400)
-                    .body("violations.field", containsInAnyOrder("email", "password", "userName"));
+                    .body("code", equalTo("VALIDATION_FAILED"))
+                    .body("details.field", containsInAnyOrder("email", "password", "username"));
             assertEquals(0, testUsers.count());
         }
 
         @Test
         void clientCannotSelfAssignAdminRole() {
             given().contentType(ContentType.JSON)
-                    .body(Map.of("userName", "Mallory", "email", "mallory@example.com", "password", PASSWORD, "role", "ADMIN"))
-                    .post("/auth/register")
+                    .body(Map.of("username", "mallory", "email", "mallory@example.com", "password", PASSWORD, "role", "ADMIN"))
+                    .post("/api/auth/register")
                     .then().statusCode(201);
-            assertEquals(Role.USER, testUsers.find("mallory@example.com").role);
+            assertEquals(Role.USER, testUsers.find("mallory").role);
         }
     }
 
@@ -146,11 +163,11 @@ class AuthResourceTest {
 
         @Test
         void successfulLoginReturnsTokenAndLifetime() {
-            register("Priya", EMAIL, PASSWORD);
+            register(USERNAME, EMAIL, PASSWORD);
 
             given().contentType(ContentType.JSON)
-                    .body(Map.of("email", EMAIL, "password", PASSWORD))
-                    .post("/auth/login")
+                    .body(Map.of("username", USERNAME, "password", PASSWORD))
+                    .post("/api/auth/login")
                     .then().statusCode(200)
                     .body("token", org.hamcrest.Matchers.matchesPattern("^[\\w-]+\\.[\\w-]+\\.[\\w-]+$"))
                     .body("expiresIn", equalTo(3600));
@@ -158,31 +175,33 @@ class AuthResourceTest {
 
         @Test
         void wrongPasswordReturns401() {
-            register("Priya", EMAIL, PASSWORD);
+            register(USERNAME, EMAIL, PASSWORD);
 
             given().contentType(ContentType.JSON)
-                    .body(Map.of("email", EMAIL, "password", "WrongPass1"))
-                    .post("/auth/login")
+                    .body(Map.of("username", USERNAME, "password", "WrongPass1"))
+                    .post("/api/auth/login")
                     .then().statusCode(401)
-                    .body("message", equalTo("invalid credentials"))
+                    .body("code", equalTo("INVALID_CREDENTIALS"))
+                    .body("timestamp", org.hamcrest.Matchers.notNullValue())
                     .body("$", not(org.hamcrest.Matchers.hasKey("token")));
         }
 
         @Test
-        void unknownEmailReturnsSame401AsWrongPassword() {
+        void unknownUsernameReturnsSame401AsWrongPassword() {
             given().contentType(ContentType.JSON)
-                    .body(Map.of("email", "nobody@example.com", "password", PASSWORD))
-                    .post("/auth/login")
+                    .body(Map.of("username", "nobody", "password", PASSWORD))
+                    .post("/api/auth/login")
                     .then().statusCode(401)
-                    .body("message", equalTo("invalid credentials"));
+                    .body("code", equalTo("INVALID_CREDENTIALS"))
+                    .body("message", equalTo("Invalid username or password"));
         }
 
         @Test
         void missingFieldsReturn400() {
-            given().contentType(ContentType.JSON).body(Map.of("email", EMAIL))
-                    .post("/auth/login")
+            given().contentType(ContentType.JSON).body(Map.of("username", USERNAME))
+                    .post("/api/auth/login")
                     .then().statusCode(400)
-                    .body("violations.field", hasItem("password"));
+                    .body("details.field", hasItem("password"));
         }
     }
 
@@ -191,18 +210,17 @@ class AuthResourceTest {
 
         @Test
         void tokenIsRs256SignedAndCarriesExpectedClaims() throws Exception {
-            register("Priya Sharma", EMAIL, PASSWORD);
-            User user = testUsers.find(EMAIL);
+            register(USERNAME, EMAIL, PASSWORD);
+            User user = testUsers.find(USERNAME);
 
-            String token = login(EMAIL, PASSWORD);
+            String token = login(USERNAME, PASSWORD);
             JwtClaims claims = verify(token, null);
 
             assertEquals(ISSUER, claims.getIssuer());
             assertEquals(String.valueOf(user.id), claims.getSubject());
-            assertEquals(EMAIL, claims.getStringClaimValue("upn"));
+            assertEquals(USERNAME, claims.getStringClaimValue("upn"));
             assertEquals(EMAIL, claims.getStringClaimValue("email"));
-            assertEquals("Priya Sharma", claims.getStringClaimValue("preferred_username"));
-            assertEquals(java.util.List.of("USER"), claims.getStringListClaimValue("groups"));
+            assertEquals(java.util.List.of("user"), claims.getStringListClaimValue("groups"));
 
             String header = new String(java.util.Base64.getUrlDecoder().decode(token.split("\\.")[0]));
             assertTrue(header.contains("\"alg\":\"RS256\""), header);
@@ -211,8 +229,8 @@ class AuthResourceTest {
 
         @Test
         void tokenExpiresAfterConfiguredLifespan() throws Exception {
-            register("Priya", EMAIL, PASSWORD);
-            String token = login(EMAIL, PASSWORD);
+            register(USERNAME, EMAIL, PASSWORD);
+            String token = login(USERNAME, PASSWORD);
 
             JwtClaims claims = verify(token, null);
             long iat = claims.getIssuedAt().getValue();
@@ -227,20 +245,20 @@ class AuthResourceTest {
 
         @Test
         void adminRoleIsReflectedInGroupsClaim() throws Exception {
-            register("Admin", "admin@example.com", PASSWORD);
-            testUsers.setRole("admin@example.com", Role.ADMIN);
+            register("admin", "admin@example.com", PASSWORD);
+            testUsers.setRole("admin", Role.ADMIN);
 
-            JwtClaims claims = verify(login("admin@example.com", PASSWORD), null);
-            assertEquals(java.util.Set.of("ADMIN", "USER"), java.util.Set.copyOf(claims.getStringListClaimValue("groups")));
+            JwtClaims claims = verify(login("admin", PASSWORD), null);
+            assertEquals(java.util.Set.of("admin", "user"), java.util.Set.copyOf(claims.getStringListClaimValue("groups")));
         }
 
         @Test
         void tamperedTokenFailsSignatureVerification() {
-            register("Priya", EMAIL, PASSWORD);
-            String[] parts = login(EMAIL, PASSWORD).split("\\.");
+            register(USERNAME, EMAIL, PASSWORD);
+            String[] parts = login(USERNAME, PASSWORD).split("\\.");
             String forgedPayload = java.util.Base64.getUrlEncoder().withoutPadding().encodeToString(
                     new String(java.util.Base64.getUrlDecoder().decode(parts[1]))
-                            .replace("[\"USER\"]", "[\"ADMIN\"]").getBytes());
+                            .replace("[\"user\"]", "[\"admin\"]").getBytes());
             String forged = parts[0] + "." + forgedPayload + "." + parts[2];
 
             assertThrows(InvalidJwtException.class, () -> verify(forged, null));
@@ -248,7 +266,7 @@ class AuthResourceTest {
 
         @Test
         void jwksExposesOnlyPublicKeyMaterial() {
-            given().get("/auth/jwks").then().statusCode(200)
+            given().get("/api/auth/jwks").then().statusCode(200)
                     .body("keys", org.hamcrest.Matchers.hasSize(1))
                     .body("keys[0].kty", equalTo("RSA"))
                     .body("keys[0].alg", equalTo("RS256"))

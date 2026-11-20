@@ -14,16 +14,13 @@ import jakarta.transaction.Transactional;
 import java.util.Locale;
 
 /**
- * Migrated from the Spring {@code AuthService}. Same rules: unique email, BCrypt hashing,
- * generic "invalid credentials" on unknown email or wrong password.
- * Fix: the original threw plain RuntimeExceptions, so its 400/401 handlers never fired.
+ * Registration and login. Passwords are stored as BCrypt hashes; unknown user and wrong password
+ * both produce the same INVALID_CREDENTIALS error (and take the same time).
  */
 @ApplicationScoped
 public class AuthService {
 
-    static final String REGISTERED = "User registered successfully";
-    static final String INVALID_CREDENTIALS = "invalid credentials";
-    /** Hash of a random string; compared against when the email is unknown so both paths cost one BCrypt check. */
+    /** Hash of a random string; compared against when the username is unknown so both paths cost one BCrypt check. */
     private static final String DUMMY_HASH = BcryptUtil.bcryptHash("timing-equalizer-" + System.nanoTime());
 
     private final UserRepository userRepository;
@@ -35,31 +32,32 @@ public class AuthService {
     }
 
     @Transactional
-    public String register(RegisterRequest request) {
+    public User register(RegisterRequest request) {
+        String username = normalize(request.username());
         String email = normalize(request.email());
-        if (userRepository.findByEmail(email).isPresent()) {
-            throw new UserAlreadyExistsException("User already exists");
+        if (userRepository.existsByUsernameOrEmail(username, email)) {
+            throw new UserAlreadyExistsException("Username or email is already registered");
         }
         User user = new User();
-        user.userName = request.userName().trim();
+        user.username = username;
         user.email = email;
         user.password = BcryptUtil.bcryptHash(request.password());
         user.role = Role.USER; // self-registration can never grant ADMIN
         userRepository.persist(user);
-        return REGISTERED;
+        return user;
     }
 
     public String login(LoginRequest request) {
-        User user = userRepository.findByEmail(normalize(request.email())).orElse(null);
+        User user = userRepository.findByUsername(normalize(request.username())).orElse(null);
         String hash = user != null ? user.password : DUMMY_HASH;
         boolean matches = BcryptUtil.matches(request.password(), hash);
         if (user == null || !matches) {
-            throw new WrongCredException(INVALID_CREDENTIALS);
+            throw new WrongCredException("Invalid username or password");
         }
         return tokenService.issueToken(user);
     }
 
-    private static String normalize(String email) {
-        return email.trim().toLowerCase(Locale.ROOT);
+    private static String normalize(String value) {
+        return value.trim().toLowerCase(Locale.ROOT);
     }
 }

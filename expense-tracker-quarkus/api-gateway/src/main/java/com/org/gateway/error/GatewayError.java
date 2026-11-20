@@ -2,10 +2,10 @@ package com.org.gateway.error;
 
 import java.time.Instant;
 
-/** Same shape as the error bodies produced by auth-service and expense-service. */
-public record GatewayError(Instant timestamp, int status, String error, String message, String path) {
+/** Same shape as the errors produced by auth-service and expense-service: {"code", "message", "timestamp"}. */
+public record GatewayError(String code, String message, Instant timestamp) {
 
-    public static GatewayError of(int status, String error, String message, String path) {
-        return new GatewayError(Instant.now(), status, error, message, path);
+    public static GatewayError of(String code, String message) {
+        return new GatewayError(code, message, Instant.now());
     }
 }

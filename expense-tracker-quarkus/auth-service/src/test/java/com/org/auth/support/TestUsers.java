@@ -19,13 +19,13 @@ public class TestUsers {
     }
 
     @Transactional
-    public User find(String email) {
-        return users.findByEmail(email).orElseThrow();
+    public User find(String username) {
+        return users.findByUsername(username).orElseThrow();
     }
 
     @Transactional
-    public void setRole(String email, Role role) {
-        users.findByEmail(email).orElseThrow().role = role;
+    public void setRole(String username, Role role) {
+        users.findByUsername(username).orElseThrow().role = role;
     }
 
     @Transactional

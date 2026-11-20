@@ -9,10 +9,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
-/**
- * Migrated from the Spring {@code com.example.auth_service.model.User} (table "users").
- * Column names match Spring's default snake_case naming. New: {@code role}.
- */
+/** Table "users". Migrated from the Spring {@code com.example.auth_service.model.User}; username is now the unique login name. */
 @Entity
 @Table(name = "users")
 public class User {
@@ -21,8 +18,9 @@ public class User {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     public Long id;
 
-    @Column(name = "user_name", nullable = false, length = 100)
-    public String userName;
+    /** Login name, stored lower-case; becomes the JWT "upn" claim. */
+    @Column(nullable = false, unique = true, length = 50)
+    public String username;
 
     @Column(nullable = false, unique = true)
     public String email;

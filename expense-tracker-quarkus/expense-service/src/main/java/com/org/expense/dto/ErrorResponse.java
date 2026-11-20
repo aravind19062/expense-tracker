@@ -5,14 +5,17 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import java.time.Instant;
 import java.util.List;
 
+/**
+ * The one error shape used by every service: {"code", "message", "timestamp"}.
+ * {@code details} is only present on validation errors and lists each rejected field.
+ */
 @JsonInclude(JsonInclude.Include.NON_NULL)
-public record ErrorResponse(Instant timestamp, int status, String error, String message, String path,
-                            List<FieldViolation> violations) {
+public record ErrorResponse(String code, String message, Instant timestamp, List<FieldError> details) {
 
-    public record FieldViolation(String field, String message) {
+    public record FieldError(String field, String message) {
     }
 
-    public static ErrorResponse of(int status, String error, String message, String path) {
-        return new ErrorResponse(Instant.now(), status, error, message, path, null);
+    public static ErrorResponse of(String code, String message) {
+        return new ErrorResponse(code, message, Instant.now(), null);
     }
 }

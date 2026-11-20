@@ -13,8 +13,8 @@ import jakarta.ws.rs.core.UriInfo;
 import org.eclipse.microprofile.openapi.annotations.tags.Tag;
 import org.eclipse.microprofile.rest.client.inject.RestClient;
 
-/** Public routes -> auth-service. Same paths as the original Spring Cloud Gateway route {@code /auth/**}. */
-@Path("/auth")
+/** Public routes {@code /api/auth/**} -> auth-service. No JWT required. */
+@Path("/api/auth")
 @PermitAll
 @Tag(name = "Auth (public)")
 @Consumes(MediaType.APPLICATION_JSON)

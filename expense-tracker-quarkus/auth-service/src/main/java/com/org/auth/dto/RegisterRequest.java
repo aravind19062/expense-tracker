@@ -2,12 +2,13 @@ package com.org.auth.dto;
 
 import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
+import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 
 public record RegisterRequest(
-        @NotBlank(message = "User name is required")
-        @Size(max = 100, message = "User name must be at most 100 characters")
-        String userName,
+        @NotBlank(message = "Username is required")
+        @Pattern(regexp = "[A-Za-z0-9._-]{3,50}", message = "Username must be 3-50 letters, digits, '.', '_' or '-'")
+        String username,
 
         @NotBlank(message = "Email is required")
         @Email(message = "Email must be a valid email address")
@@ -20,6 +21,6 @@ public record RegisterRequest(
 
     @Override
     public String toString() {
-        return "RegisterRequest[userName=" + userName + ", email=" + email + ", password=****]";
+        return "RegisterRequest[username=" + username + ", email=" + email + ", password=****]";
     }
 }

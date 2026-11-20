@@ -23,16 +23,21 @@ public final class TestKeys {
     }
 
     public static String validToken() {
-        return Jwt.issuer(ISSUER).subject("101").upn("priya@example.com").groups(Set.of("USER"))
+        return Jwt.issuer(ISSUER).subject("101").upn("priya").groups(Set.of("user"))
+                .expiresIn(3600).sign(TRUSTED.getPrivate());
+    }
+
+    public static String tokenWithGroups(String... groups) {
+        return Jwt.issuer(ISSUER).subject("101").upn("priya").groups(Set.of(groups))
                 .expiresIn(3600).sign(TRUSTED.getPrivate());
     }
 
     public static String forgedToken() {
-        return Jwt.issuer(ISSUER).subject("101").groups(Set.of("USER")).expiresIn(3600).sign(UNTRUSTED.getPrivate());
+        return Jwt.issuer(ISSUER).subject("101").groups(Set.of("user")).expiresIn(3600).sign(UNTRUSTED.getPrivate());
     }
 
     public static String expiredToken() {
-        return Jwt.issuer(ISSUER).subject("101").groups(Set.of("USER"))
+        return Jwt.issuer(ISSUER).subject("101").groups(Set.of("user"))
                 .issuedAt(java.time.Instant.now().minusSeconds(7200))
                 .expiresAt(java.time.Instant.now().minusSeconds(3600))
                 .sign(TRUSTED.getPrivate());

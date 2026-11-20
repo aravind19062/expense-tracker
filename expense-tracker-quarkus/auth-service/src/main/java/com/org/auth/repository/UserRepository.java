@@ -9,7 +9,11 @@ import java.util.Optional;
 @ApplicationScoped
 public class UserRepository implements PanacheRepository<User> {
 
-    public Optional<User> findByEmail(String email) {
-        return find("email", email).firstResultOptional();
+    public Optional<User> findByUsername(String username) {
+        return find("username", username).firstResultOptional();
+    }
+
+    public boolean existsByUsernameOrEmail(String username, String email) {
+        return count("username = ?1 or email = ?2", username, email) > 0;
     }
 }

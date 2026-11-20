@@ -1,27 +1,9 @@
 package com.org.expense.entity;
 
-import jakarta.persistence.Column;
-import jakarta.persistence.Entity;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
-import jakarta.persistence.Id;
-import jakarta.persistence.Table;
+/** The fixed set of expense categories from the API spec. Stored by name (EnumType.STRING). */
+public enum Category {
+    FOOD, TRAVEL, BILLS, SHOPPING, OTHER;
 
-/**
- * Migrated from the Spring Boot {@code com.org.expense_service.model.Category}.
- * Same table and columns (category_id, category_name). The inverse
- * {@code @OneToMany expenses} collection was dropped: it was only used for
- * JSON serialization and cascading deletes (see CategoryService#delete).
- */
-@Entity
-@Table(name = "category")
-public class Category {
-
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "category_id")
-    public Long id;
-
-    @Column(name = "category_name", nullable = false, length = 100)
-    public String categoryName;
+    /** Regex used by Bean Validation on request fields that carry a category name. */
+    public static final String PATTERN = "FOOD|TRAVEL|BILLS|SHOPPING|OTHER";
 }

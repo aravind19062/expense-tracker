@@ -27,9 +27,8 @@ public class TokenService {
         Instant now = Instant.now();
         return Jwt.issuer(issuer)
                 .subject(String.valueOf(user.id))
-                .upn(user.email)
+                .upn(user.username)
                 .claim("email", user.email)
-                .preferredUserName(user.userName)
                 .groups(user.role.groups())
                 .issuedAt(now)
                 .expiresAt(now.plusSeconds(lifespanSeconds))

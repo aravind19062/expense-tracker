@@ -19,9 +19,9 @@ class DownstreamUnavailableTest {
     void unreachableExpenseServiceReturns503Json() {
         given().auth().oauth2(TestKeys.validToken()).get("/api/expenses")
                 .then().statusCode(503)
-                .body("status", equalTo(503))
-                .body("error", equalTo("Service Unavailable"))
-                .body("path", equalTo("/api/expenses"));
+                .body("code", equalTo("SERVICE_UNAVAILABLE"))
+                .body("message", equalTo("Downstream service is unavailable, please retry later"))
+                .body("timestamp", org.hamcrest.Matchers.notNullValue());
     }
 
     @Test
